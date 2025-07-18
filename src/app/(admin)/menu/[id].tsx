@@ -6,21 +6,24 @@ import { Product, PizzaSize } from "../../../types";
 import { useState } from "react";
 import Button from "@/components/Button";
 import { useCart } from "@/providers/CartProvider";
+import { Link } from "expo-router";
+import { FontAwesome } from "@expo/vector-icons";
+import Colors from "@/constants/Colors";
 const sized: PizzaSize[] = ["S", "M", "L", "XL"];
 
 const ProductDetailScreen = () => {
-  const router=useRouter()
+  const router = useRouter();
   const [PizzaSize, setPizzaSize] = useState<PizzaSize>("M");
   const { id } = useLocalSearchParams();
   const product = products.find((p) => p.id.toString() == id);
-  const { addItem,items } = useCart();
+  const { addItem, items } = useCart();
 
   function addToCart() {
     if (!product) {
       return;
     }
     addItem(product, PizzaSize);
-    router.push('/cart')
+    router.push("/cart");
   }
 
   if (!product) {
@@ -28,13 +31,29 @@ const ProductDetailScreen = () => {
   }
   return (
     <View style={styles.container}>
+      <Stack.Screen
+        options={{
+          title: "Menu",
+          headerRight: () => (
+            <Link href={`/(admin)/menu/create?id=${id}`} asChild>
+              <Pressable>
+                {({ pressed }) => (
+                  <FontAwesome
+                    name="pencil"
+                    size={25}
+                    color={Colors.light.tint}
+                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
+                  />
+                )}
+              </Pressable>
+            </Link>
+          ),
+        }}
+      />
       <Stack.Screen options={{ title: product?.name }} />
       <Image source={{ uri: product.image }} style={styles.image} />
- 
-   
 
       <Text style={styles.price}>Price :${product.price}</Text>
-
     </View>
   );
 };
@@ -53,7 +72,6 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 18,
     fontWeight: "bold",
-
   },
   sizes: {
     flexDirection: "row",

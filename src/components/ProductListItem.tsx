@@ -2,15 +2,18 @@ import { Pressable, Text,View } from "react-native";
 import products from "@assets/data/products";
 import { Image, StyleSheet } from "react-native";
 import { Product } from "../types";
-import { Link } from "expo-router";
+import { Link, useSegments } from "expo-router";
 const defaulImage='https://notjustdev-dummy.s3.us-east-2.amazonaws.com/food/peperoni.png'
+export const defaultPizzaImage =
+  'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/food/default.png';
 
 type ProductListItemProps={
     product: Product
 }
 const ProductListItem=({product}: ProductListItemProps)=>{
+  const segments=useSegments();
   return(
- <Link href={`/menu/${product.id}`} asChild>
+ <Link href={`/${segments[0]}/menu/${product.id}`} asChild>
   <Pressable style={styles.container}>
     <Image
       source={{ uri: product.image || defaulImage }}

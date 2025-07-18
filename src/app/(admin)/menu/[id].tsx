@@ -30,35 +30,11 @@ const ProductDetailScreen = () => {
     <View style={styles.container}>
       <Stack.Screen options={{ title: product?.name }} />
       <Image source={{ uri: product.image }} style={styles.image} />
-      <Text> Select Size</Text>
-      <View style={styles.sizes}>
-        {sized.map((size) => (
-          <Pressable
-            onPress={() => {
-              setPizzaSize(size);
-            }}
-            style={[
-              styles.size,
-              { backgroundColor: PizzaSize == size ? "gainsboro" : "white" },
-            ]}
-            key={size}
-          >
-            <Text
-              style={[
-                styles.sizeText,
-                {
-                  color: PizzaSize == size ? "black" : "grey",
-                },
-              ]}
-            >
-              {size}
-            </Text>
-          </Pressable>
-        ))}{" "}
-      </View>
+ 
+   
 
       <Text style={styles.price}>Price :${product.price}</Text>
-      <Button onPress={addToCart} text="Add to Cart" />
+
     </View>
   );
 };
@@ -77,7 +53,7 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 18,
     fontWeight: "bold",
-    marginTop: "auto",
+
   },
   sizes: {
     flexDirection: "row",

@@ -5,17 +5,20 @@ import products from "@assets/data/products";
 import { Product, PizzaSize } from "../../../types";
 import { useState } from "react";
 import Button from "@/components/Button";
-const sized = ["S", "M", "L", "XL"];
+import { useCart } from "@/providers/CartProvider";
+const sized: PizzaSize[] = ["S", "M", "L", "XL"];
 
 const ProductDetailScreen = () => {
-  const [PizzaSize, setPizzaSize] = useState("M");
+  const [PizzaSize, setPizzaSize] = useState<PizzaSize>("M");
   const { id } = useLocalSearchParams();
   const product = products.find((p) => p.id.toString() == id);
-
+  const { addItem,items } = useCart();
 
   function addToCart() {
-    console.warn('Adding to cart');
-    
+    if (!product) {
+      return;
+    }
+    addItem(product, PizzaSize);
   }
 
   if (!product) {
@@ -53,7 +56,7 @@ const ProductDetailScreen = () => {
       </View>
 
       <Text style={styles.price}>Price :${product.price}</Text>
-      <Button onPress={addToCart} text="Add to Cart"/>
+      <Button onPress={addToCart} text="Add to Cart" />
     </View>
   );
 };
@@ -72,7 +75,7 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 18,
     fontWeight: "bold",
-    marginTop:'auto'
+    marginTop: "auto",
   },
   sizes: {
     flexDirection: "row",

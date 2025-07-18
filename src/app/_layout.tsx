@@ -5,6 +5,8 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
+import { StatusBar } from 'expo-status-bar';
+import CartProvider from '@/providers/CartProvider';
 
 import { useColorScheme } from '../components/useColorScheme.web';
 
@@ -50,10 +52,14 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <CartProvider >
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-       
+        <Stack.Screen name="cart" options={{ presentation: 'modal' }} />
       </Stack>
+      </CartProvider>
+       <StatusBar style='dark'/>
     </ThemeProvider>
+   
   );
 }

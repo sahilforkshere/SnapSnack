@@ -1,27 +1,29 @@
 import { Image, StyleSheet, Text, TextInput, View, Alert } from "react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Button from "@/components/Button";
 import { defaultPizzaImage } from "@/components/ProductListItem";
 import * as ImagePicker from "expo-image-picker";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useInsertProduct } from "@/api/products";
 
 const CreateProduct = () => {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
-  const [errors, setErrors] = useState("");
   const [image, setImage] = useState<string | null>(null);
+  const [errors, setErrors] = useState("");
   const { id } = useLocalSearchParams();
+  const router = useRouter();
+
+  const { mutate: insertProduct, isPending } = useInsertProduct();
   const isUpdating = !!id;
+
   const pickImage = async () => {
-    // No permissions request is necessary for launching the image library
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images", "videos"],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     });
-
-    console.log(result);
 
     if (!result.canceled) {
       setImage(result.assets[0].uri);
@@ -31,66 +33,75 @@ const CreateProduct = () => {
   const resetFields = () => {
     setName("");
     setPrice("");
+    setImage(null);
   };
 
   const validateInput = () => {
     setErrors("");
+
     if (!name) {
-      setErrors("Name is Required");
+      setErrors("Name is required");
       return false;
     }
+
     if (!price) {
       setErrors("Price is required");
       return false;
+    }
 
-      if (isNaN(parseFloat(price))) {
-        setErrors("Price is not a number");
-        return false;
-      }
-      return true;
+    const parsedPrice = parseFloat(price);
+    if (isNaN(parsedPrice)) {
+      setErrors("Price must be a number");
+      return false;
     }
+
+    return true;
   };
+
   const onCreate = () => {
-    if (!validateInput()) {
-      return;
-    }
-    resetFields();
+    if (!validateInput()) return;
+
+    insertProduct(
+      { name, price: parseFloat(price), image },
+      {
+        onSuccess: () => {
+          Alert.alert("Success", "Product created successfully!");
+          resetFields();
+          router.replace("/(admin)/menu"); // or wherever you want to go
+        },
+        onError: (err: any) => {
+          Alert.alert("Error", err.message);
+        },
+      }
+    );
   };
-  const onUpdate = () => {
-    if (!validateInput()) {
-      return;
-    }
-    resetFields();
-  };
+
   const onSubmit = () => {
     if (isUpdating) {
-      onUpdate();
+      Alert.alert("Update not implemented yet");
     } else {
       onCreate();
     }
   };
-  const onDelete = () => {
-
-    
-  };
 
   const confirmDelete = () => {
-    Alert.alert("Confirm", "Are you sure you want to delte this product", [
-      {
-        text: "Cancel",
-      },
+    Alert.alert("Confirm", "Are you sure you want to delete this product?", [
+      { text: "Cancel" },
       {
         text: "Confirm",
         style: "destructive",
-        onPress: onDelete,
+        onPress: () => {
+          Alert.alert("Delete not implemented yet");
+        },
       },
     ]);
   };
+
   return (
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: isUpdating ? "Update Product " : "Create Product",
+          title: isUpdating ? "Update Product" : "Create Product",
         }}
       />
       <Image
@@ -100,12 +111,15 @@ const CreateProduct = () => {
       <Text style={styles.textButton} onPress={pickImage}>
         Select Image
       </Text>
+
       <Text style={styles.label}>Name</Text>
       <TextInput
+        value={name}
         onChangeText={setName}
-        placeholder="Name"
+        placeholder="Pizza name"
         style={styles.input}
       />
+
       <Text style={styles.label}>Price ($)</Text>
       <TextInput
         value={price}
@@ -114,8 +128,11 @@ const CreateProduct = () => {
         style={styles.input}
         keyboardType="numeric"
       />
-      <Text style={{ color: "red" }}>{errors}</Text>
-      <Button onPress={onSubmit} text={isUpdating ? "Update" : "Create"} />
+
+      <Text style={{ color: "red", marginBottom: 10 }}>{errors}</Text>
+
+      <Button onPress={onSubmit} text={isPending ? "Saving..." : isUpdating ? "Update" : "Create"} />
+
       {isUpdating && (
         <Text onPress={confirmDelete} style={styles.dltbtn}>
           Delete
@@ -148,13 +165,18 @@ const styles = StyleSheet.create({
     width: "50%",
     aspectRatio: 1,
     alignSelf: "center",
+    borderRadius: 10,
   },
   textButton: {
     alignSelf: "center",
     fontWeight: "bold",
     marginVertical: 10,
+    color: "blue",
   },
   dltbtn: {
     alignSelf: "center",
+    color: "red",
+    marginTop: 20,
+    fontWeight: "bold",
   },
 });

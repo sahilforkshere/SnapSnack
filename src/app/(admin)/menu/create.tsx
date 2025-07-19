@@ -4,21 +4,34 @@ import Button from "@/components/Button";
 import { defaultPizzaImage } from "@/components/ProductListItem";
 import * as ImagePicker from "expo-image-picker";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useInsertProduct } from "@/api/products";
+import { useInsertProduct, useUpdateProduct, useProduct } from "@/api/products";
 
 const CreateProduct = () => {
+  const { id: idString } = useLocalSearchParams();
+  const id = idString ? parseFloat(Array.isArray(idString) ? idString[0] : idString) : undefined;
+  const isUpdating = !!id;
+
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [image, setImage] = useState<string | null>(null);
   const [errors, setErrors] = useState("");
-  const { id } = useLocalSearchParams();
   const router = useRouter();
 
   const { mutate: insertProduct, isPending } = useInsertProduct();
-  const isUpdating = !!id;
+  const { mutate: updateProduct } = useUpdateProduct();
+  const { data: existingProduct } = useProduct(id || 0, { enabled: isUpdating });
+
+  // Pre-fill form on edit
+  useEffect(() => {
+    if (existingProduct) {
+      setName(existingProduct.name);
+      setPrice(existingProduct.price.toString());
+      setImage(existingProduct.image);
+    }
+  }, [existingProduct]);
 
   const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
+    const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
@@ -67,7 +80,24 @@ const CreateProduct = () => {
         onSuccess: () => {
           Alert.alert("Success", "Product created successfully!");
           resetFields();
-          router.replace("/(admin)/menu"); // or wherever you want to go
+          router.replace("/(admin)/menu");
+        },
+        onError: (err: any) => {
+          Alert.alert("Error", err.message);
+        },
+      }
+    );
+  };
+
+  const onUpdate = () => {
+    if (!validateInput()) return;
+
+    updateProduct(
+      { id, name, price: parseFloat(price), image },
+      {
+        onSuccess: () => {
+          Alert.alert("Success", "Product updated successfully!");
+          router.back();
         },
         onError: (err: any) => {
           Alert.alert("Error", err.message);
@@ -78,7 +108,7 @@ const CreateProduct = () => {
 
   const onSubmit = () => {
     if (isUpdating) {
-      Alert.alert("Update not implemented yet");
+      onUpdate();
     } else {
       onCreate();
     }
@@ -131,7 +161,10 @@ const CreateProduct = () => {
 
       <Text style={{ color: "red", marginBottom: 10 }}>{errors}</Text>
 
-      <Button onPress={onSubmit} text={isPending ? "Saving..." : isUpdating ? "Update" : "Create"} />
+      <Button
+        onPress={onSubmit}
+        text={isPending ? "Saving..." : isUpdating ? "Update" : "Create"}
+      />
 
       {isUpdating && (
         <Text onPress={confirmDelete} style={styles.dltbtn}>

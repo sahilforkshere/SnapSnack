@@ -61,3 +61,37 @@ export const useInsertProduct = () => {
     },
   });
 };
+
+export const useUpdateProduct=()=>{
+    const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { name: string; image: string | null; price: number }) => {
+      const { error, data: updatedProduct } = await supabase
+        .from("products")
+        .update({
+          name: data.name,
+          image: data.image,
+          price: data.price,
+        })
+        .eq('id',data.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Supabase insert error:", error.message);
+        throw new Error(error.message);
+      }
+
+      return updatedProduct;
+    },
+    onSuccess: (data) => {
+      console.log("✅ Product inserted successfully:", data);
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["products",data.id] });
+    },
+    onError: (error) => {
+      console.error("❌ Insert failed:", error);
+    },
+  });
+}

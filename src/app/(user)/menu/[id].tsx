@@ -1,69 +1,67 @@
 import { View, Text, Image, StyleSheet, Pressable } from "react-native";
-import React from "react";
+import React, { useState } from "react";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import products from "@assets/data/products";
-import { Product, PizzaSize } from "../../../types";
-import { useState } from "react";
+import { PizzaSize } from "../../../types";
 import Button from "@/components/Button";
 import { useCart } from "@/providers/CartProvider";
-const sized: PizzaSize[] = ["S", "M", "L", "XL"];
+import { useProduct } from "@/api/products";
+
+const sizes: PizzaSize[] = ["S", "M", "L", "XL"];
 
 const ProductDetailScreen = () => {
-  const router=useRouter()
-  const [PizzaSize, setPizzaSize] = useState<PizzaSize>("M");
+  const router = useRouter();
+  const [selectedSize, setSelectedSize] = useState<PizzaSize>("M");
   const { id } = useLocalSearchParams();
-  const product = products.find((p) => p.id.toString() == id);
-  const { addItem,items } = useCart();
+  const parsedId = Array.isArray(id) ? parseFloat(id[0]) : parseFloat(id);
 
-  function addToCart() {
-    if (!product) {
-      return;
-    }
-    addItem(product, PizzaSize);
-    router.push('/cart')
-  }
+  const { addItem } = useCart();
+  const { data: product, error, isLoading } = useProduct(parsedId);
 
-  if (!product) {
-    return <Text> Product not found</Text>;
-  }
+  const addToCart = () => {
+    if (!product) return;
+    addItem(product, selectedSize);
+    router.push("/cart");
+  };
+
+  if (isLoading) return <Text>Loading...</Text>;
+  if (error) return <Text>Error loading product</Text>;
+  if (!product) return <Text>Product not found</Text>;
+
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: product?.name }} />
+      <Stack.Screen options={{ title: product.name }} />
       <Image source={{ uri: product.image }} style={styles.image} />
-      <Text> Select Size</Text>
+      <Text>Select Size</Text>
       <View style={styles.sizes}>
-        {sized.map((size) => (
+        {sizes.map((size) => (
           <Pressable
-            onPress={() => {
-              setPizzaSize(size);
-            }}
+            key={size}
+            onPress={() => setSelectedSize(size)}
             style={[
               styles.size,
-              { backgroundColor: PizzaSize == size ? "gainsboro" : "white" },
+              { backgroundColor: selectedSize === size ? "gainsboro" : "white" },
             ]}
-            key={size}
           >
             <Text
               style={[
                 styles.sizeText,
-                {
-                  color: PizzaSize == size ? "black" : "grey",
-                },
+                { color: selectedSize === size ? "black" : "grey" },
               ]}
             >
               {size}
             </Text>
           </Pressable>
-        ))}{" "}
+        ))}
       </View>
 
-      <Text style={styles.price}>Price :${product.price}</Text>
+      <Text style={styles.price}>Price: ${product.price}</Text>
       <Button onPress={addToCart} text="Add to Cart" />
     </View>
   );
 };
 
 export default ProductDetailScreen;
+
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "white",
@@ -89,7 +87,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   size: {
-    backgroundColor: "gainsboro",
     width: 50,
     aspectRatio: 1,
     borderRadius: 25,

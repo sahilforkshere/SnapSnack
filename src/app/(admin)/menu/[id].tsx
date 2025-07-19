@@ -1,41 +1,42 @@
 import { View, Text, Image, StyleSheet, Pressable } from "react-native";
-import React from "react";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import products from "@assets/data/products";
-import { Product, PizzaSize } from "../../../types";
-import { useState } from "react";
-import Button from "@/components/Button";
-import { useCart } from "@/providers/CartProvider";
-import { Link } from "expo-router";
+import React, { useState } from "react";
+import { Stack, useLocalSearchParams, useRouter, Link } from "expo-router";
 import { FontAwesome } from "@expo/vector-icons";
 import Colors from "@/constants/Colors";
-const sized: PizzaSize[] = ["S", "M", "L", "XL"];
+import Button from "@/components/Button";
+import { useCart } from "@/providers/CartProvider";
+import { PizzaSize } from "../../../types";
+import { useProduct } from "@/api/products";
+
+const sizes: PizzaSize[] = ["S", "M", "L", "XL"];
 
 const ProductDetailScreen = () => {
   const router = useRouter();
-  const [PizzaSize, setPizzaSize] = useState<PizzaSize>("M");
+  const { addItem } = useCart();
+  const [selectedSize, setSelectedSize] = useState<PizzaSize>("M");
+
   const { id } = useLocalSearchParams();
-  const product = products.find((p) => p.id.toString() == id);
-  const { addItem, items } = useCart();
+  const parsedId = Array.isArray(id) ? parseFloat(id[0]) : parseFloat(id);
 
-  function addToCart() {
-    if (!product) {
-      return;
-    }
-    addItem(product, PizzaSize);
+  const { data: product, error, isLoading } = useProduct(parsedId);
+
+  const addToCart = () => {
+    if (!product) return;
+    addItem(product, selectedSize);
     router.push("/cart");
-  }
+  };
 
-  if (!product) {
-    return <Text> Product not found</Text>;
-  }
+  if (isLoading) return <Text>Loading...</Text>;
+  if (error) return <Text>Error loading product.</Text>;
+  if (!product) return <Text>Product not found</Text>;
+
   return (
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: "Menu",
+          title: product.name,
           headerRight: () => (
-            <Link href={`/(admin)/menu/create?id=${id}`} asChild>
+            <Link href={`/(admin)/menu/create?id=${product.id}`} asChild>
               <Pressable>
                 {({ pressed }) => (
                   <FontAwesome
@@ -50,15 +51,43 @@ const ProductDetailScreen = () => {
           ),
         }}
       />
-      <Stack.Screen options={{ title: product?.name }} />
+
       <Image source={{ uri: product.image }} style={styles.image} />
 
-      <Text style={styles.price}>Price :${product.price}</Text>
+      <Text style={styles.price}>Price: ${product.price}</Text>
+
+      <Text style={{ marginVertical: 10 }}>Select Size</Text>
+      <View style={styles.sizes}>
+        {sizes.map((size) => (
+          <Pressable
+            key={size}
+            onPress={() => setSelectedSize(size)}
+            style={[
+              styles.size,
+              {
+                backgroundColor: selectedSize === size ? "gainsboro" : "white",
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.sizeText,
+                { color: selectedSize === size ? "black" : "grey" },
+              ]}
+            >
+              {size}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <Button onPress={addToCart} text="Add to Cart" />
     </View>
   );
 };
 
 export default ProductDetailScreen;
+
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "white",
@@ -72,22 +101,24 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 18,
     fontWeight: "bold",
+    marginTop: 10,
   },
   sizes: {
     flexDirection: "row",
-    marginVertical: 10,
     justifyContent: "space-around",
+    marginVertical: 10,
   },
   sizeText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "500",
   },
   size: {
-    backgroundColor: "gainsboro",
     width: 50,
     aspectRatio: 1,
     borderRadius: 25,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "lightgray",
   },
 });

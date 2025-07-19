@@ -95,3 +95,24 @@ export const useUpdateProduct=()=>{
     },
   });
 }
+
+export const useDeleteProduct = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { error } = await supabase.from("products").delete().eq("id", id);
+      if (error) {
+        throw new Error(error.message);
+      }
+    },
+    onSuccess: (_, id) => {
+      // Invalidate the product list and the specific product if it's cached
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["products", id] });
+    },
+    onError: (err) => {
+      console.error("❌ Delete failed:", err);
+    },
+  });
+};
